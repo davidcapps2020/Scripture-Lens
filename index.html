@@ -3,33 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SDA Scripture Lens | Offline Research</title>
+    <title>SDA Scripture Lens | Prophetic Research</title>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://unpkg.com/tesseract.js@5.0.5/dist/tesseract.min.js"></script>
+    <script src="https://unpkg.com/tesseract.js@5.0.4/dist/tesseract.min.js"></script>
     
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Playfair+Display:ital,wght@1,600&display=swap');
         body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
         .serif-italic { font-family: 'Playfair Display', serif; }
         .scanning-line {
-            height: 2px;
+            height: 3px;
             background: linear-gradient(to right, transparent, #fbbf24, transparent);
             position: absolute;
             width: 100%;
             top: 0;
-            animation: scan 3s linear infinite;
+            animation: scan 2.5s linear infinite;
         }
         @keyframes scan {
-            0% { top: 15%; }
-            100% { top: 85%; }
+            0% { top: 20%; opacity: 0; }
+            50% { opacity: 1; }
+            100% { top: 80%; opacity: 0; }
         }
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .bg-sda-blue { background-color: #2b4c7e; }
     </style>
 </head>
 <body class="bg-slate-900 overflow-hidden">
@@ -38,53 +40,50 @@
     <script type="text/babel">
         const { useState, useRef, useEffect } = React;
 
-        const SDA_LIBRARY = [
+        const LOCAL_LIBRARY = [
             {
-                keywords: ["sabbath", "seventh", "holy day", "commandment", "law", "rested"],
-                title: "The Sabbath (Belief #20)",
-                summary: "This passage identifies the sacred time established by God at creation, emphasizing rest, worship, and our relationship with the Creator.",
-                content: "In SDA theology, the Sabbath is a sign of our allegiance to the Creator. It is the 'Seal of God' in the final conflict. While the world may view this as legalism, we understand it as a celebration of God’s creative and redemptive power, central to the First Angel's Message to 'Worship Him who made heaven and earth'."
+                keywords: ["sabbath", "seventh", "holy day", "commandment", "remember", "rested", "law"],
+                title: "The Sabbath: Sign of Loyalty",
+                summary: "This passage identifies the sacred time established at Creation as a memorial of God's redemptive power.",
+                pillar: "Fundamental Belief #20",
+                egw: "E.G. White in 'The Great Controversy' notes that the Sabbath will be the great test of loyalty. It is the 'seal' of God's law, distinguishing those who worship the Creator.",
+                pastoral: "The Sabbath is a celebration of 'Rest in Christ.' It is the core of the First Angel's Message to worship Him who made heaven and earth."
             },
             {
-                keywords: ["sanctuary", "temple", "priest", "lamb", "blood", "cleansed", "1844"],
-                title: "Christ's Ministry (Belief #24)",
-                summary: "This text focuses on the dwelling place of God and the mediatorial work of the High Priest in reconciling humanity to God.",
-                content: "This verse points to the Sanctuary doctrine, the 'Key' that unlocked the mystery of the 1844 disappointment. It highlights Christ’s work in the Heavenly Sanctuary. We believe that since 1844, Christ has entered the second and last phase of His atoning ministry—the work of investigative judgment."
+                keywords: ["sanctuary", "temple", "priest", "lamb", "blood", "cleansed", "1844", "judgment"],
+                title: "The Sanctuary & Investigative Judgment",
+                summary: "This text focuses on the mediatorial work of our High Priest in the heavenly courts.",
+                pillar: "Fundamental Belief #24",
+                egw: "As E.G. White wrote, 'The subject of the sanctuary was the key which unlocked the mystery of the disappointment of 1844.'",
+                pastoral: "Christ is currently in the Most Holy Place, finishing His work before probation closes. This is our 'Present Truth' focus."
             },
             {
-                keywords: ["death", "sleep", "dead", "grave", "soul", "resurrection", "immortality"],
-                title: "State of the Dead (Belief #26)",
-                summary: "This scripture discusses the nature of human life, the reality of death, and the promise of a future awakening through Christ.",
-                content: "Adventists interpret this through the lens of 'conditional immortality.' Death is a silent sleep until the resurrection. This protects the believer from the deceptions of spiritualism. We look forward to the 'Blessed Hope' of the first resurrection at Christ's Second Coming."
-            },
-            {
-                keywords: ["prophecy", "prophet", "vision", "revelation", "testimony", "spirit"],
-                title: "Spirit of Prophecy (Belief #18)",
-                summary: "These words highlight God's method of communicating divine guidance and truth through chosen messengers to lead His people.",
-                content: "This text underscores God's communication with His remnant people. We recognize the gift of prophecy as a identifying mark of the remnant church, specifically manifested in the ministry of Ellen G. White as a 'lesser light' leading back to the Bible."
-            },
-            {
-                keywords: ["coming", "return", "clouds", "appearing", "soon", "thief"],
-                title: "Second Coming (Belief #25)",
-                summary: "This passage points to the climactic event of history: the literal and visible return of Jesus Christ to Earth.",
-                content: "The Second Advent is the climactic event of the Great Controversy. Unlike 'secret rapture' theories, we believe Christ's return will be literal, personal, visible, and worldwide. This is the 'Blessed Hope' that motivates our mission today."
+                keywords: ["death", "sleep", "dead", "grave", "soul", "resurrection"],
+                title: "State of the Dead: The Sleep",
+                summary: "This scripture discusses the reality that death is an unconscious sleep until the resurrection.",
+                pillar: "Fundamental Belief #26",
+                egw: "In 'Desire of Ages,' White clarifies that to the believer, death is but a sleep—a moment of silence before the morning of the resurrection.",
+                pastoral: "This truth protects us from spiritualism. We know that our life is hid with Christ in God until the last trumpet sounds."
             }
         ];
 
-        const FALLBACK_INSIGHT = {
-            title: "Great Controversy Framework",
-            summary: "This scripture provides a foundation for understanding God's character and His ongoing plan to restore humanity.",
-            content: "This verse is best understood through the 'Great Controversy' framework—the cosmic struggle between Christ and Satan over the character of God. As 'People of the Book,' we see every scripture as a piece of the puzzle revealing God's plan to restore His image in humanity before the Second Coming."
+        const DEFAULT_INSIGHT = {
+            title: "General Biblical Insight",
+            summary: "This passage provides a foundation for understanding God's character and His plan for humanity.",
+            pillar: "Biblical Hermeneutics",
+            egw: "Ellen White suggests reading every scripture through the lens of the 'Great Controversy'—the ongoing struggle to restore God's image in man.",
+            pastoral: "As Adventist researchers, we ask: How does this verse prepare me for the Second Coming? Every word is a lamp unto our feet."
         };
 
         const App = () => {
             const [view, setView] = useState('camera'); 
-            const [stream, setStream] = useState(null);
             const [photo, setPhoto] = useState(null);
             const [extractedText, setExtractedText] = useState("");
             const [analysis, setAnalysis] = useState(null);
             const [isLoading, setIsLoading] = useState(false);
             const [status, setStatus] = useState("Initializing...");
+            const [apiKey, setApiKey] = useState(localStorage.getItem('sda_api_key') || "");
+            const [showSettings, setShowSettings] = useState(false);
             const [cameraError, setCameraError] = useState(false);
             
             const videoRef = useRef(null);
@@ -93,43 +92,62 @@
 
             useEffect(() => {
                 if (window.lucide) lucide.createIcons();
-            }, [view, analysis, isLoading]);
+            }, [view, analysis, isLoading, showSettings, cameraError]);
 
             useEffect(() => {
-                if (view === "camera") initCamera();
+                if (view === "camera") startCamera();
                 else stopCamera();
                 return () => stopCamera();
             }, [view]);
 
-            const stopCamera = () => {
-                if (stream) {
-                    stream.getTracks().forEach(track => track.stop());
-                    setStream(null);
+            const startCamera = async () => {
+                setCameraError(false);
+                setStatus("Searching for camera...");
+                
+                try {
+                    // Try 1: Back camera (ideal for mobile)
+                    const stream = await navigator.mediaDevices.getUserMedia({ 
+                        video: { facingMode: { ideal: 'environment' } } 
+                    });
+                    if (videoRef.current) videoRef.current.srcObject = stream;
+                    setStatus("Align verse in frame");
+                } catch (err) {
+                    console.warn("Back camera not found, trying any available...", err);
+                    try {
+                        // Try 2: Any camera (fallback for desktop)
+                        const fallbackStream = await navigator.mediaDevices.getUserMedia({ video: true });
+                        if (videoRef.current) videoRef.current.srcObject = fallbackStream;
+                        setStatus("Align verse in frame");
+                    } catch (finalErr) {
+                        console.error("No camera hardware found:", finalErr);
+                        setCameraError(true);
+                        setStatus("Hardware not found. Use upload.");
+                    }
                 }
             };
 
-            const initCamera = async () => {
-                setCameraError(false);
-                try {
-                    const constraints = { video: { facingMode: { ideal: 'environment' } } };
-                    const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
-                    setStream(mediaStream);
-                    if (videoRef.current) videoRef.current.srcObject = mediaStream;
-                    setStatus("Align verse in frame");
-                } catch (err) {
-                    setCameraError(true);
-                    setStatus("Hardware not found");
+            const stopCamera = () => {
+                if (videoRef.current && videoRef.current.srcObject) {
+                    videoRef.current.srcObject.getTracks().forEach(track => track.stop());
                 }
             };
 
             const handleCapture = () => {
                 const canvas = canvasRef.current;
                 const video = videoRef.current;
-                if (!video || !canvas) return;
+                
+                if (!video || !canvas || video.videoWidth === 0) {
+                    setStatus("Waiting for video feed...");
+                    return;
+                }
+
                 canvas.width = video.videoWidth;
                 canvas.height = video.videoHeight;
-                canvas.getContext('2d').drawImage(video, 0, 0);
-                processImage(canvas.toDataURL('image/jpeg', 0.8));
+                const context = canvas.getContext('2d');
+                context.drawImage(video, 0, 0);
+                
+                const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+                processImage(dataUrl);
             };
 
             const processImage = async (imageData) => {
@@ -137,46 +155,83 @@
                 setView("results");
                 setIsLoading(true);
                 setStatus("Reading verse...");
+                
                 try {
-                    const { data: { text } } = await Tesseract.recognize(imageData, 'eng');
+                    const { data: { text } } = await Tesseract.recognize(imageData, 'eng', {
+                        logger: m => {
+                            if (m.status === 'recognizing text') {
+                                setStatus(`Reading: ${Math.round(m.progress * 100)}%`);
+                            }
+                        }
+                    });
+
                     const cleanText = text.replace(/\s+/g, ' ').trim();
-                    setExtractedText(cleanText || "Verse detected");
-                    runLocalAnalysis(cleanText);
+                    setExtractedText(cleanText || "Genesis 1:1");
+                    
+                    if (apiKey && cleanText) {
+                        setStatus("Consulting Cloud...");
+                        await performOnlineResearch(cleanText);
+                    } else {
+                        setStatus("Mapping pillars...");
+                        const lowerText = cleanText.toLowerCase();
+                        const match = LOCAL_LIBRARY.find(item => 
+                            item.keywords.some(keyword => lowerText.includes(keyword))
+                        );
+                        setAnalysis(match || DEFAULT_INSIGHT);
+                        setIsLoading(false);
+                    }
                 } catch (err) {
-                    setExtractedText("Scan failed. Try again.");
+                    console.error("OCR Error:", err);
+                    setExtractedText("Sample Verse Loaded");
+                    setAnalysis(DEFAULT_INSIGHT);
                     setIsLoading(false);
                 }
             };
 
-            const runLocalAnalysis = (text) => {
-                setStatus("Searching Library...");
-                const lowerText = text.toLowerCase();
-                const match = SDA_LIBRARY.find(item => 
-                    item.keywords.some(keyword => lowerText.includes(keyword))
-                );
+            const performOnlineResearch = async (text) => {
+                const prompt = `You are an SDA Biblical Research Scholar. Verse: "${text}". 
+                Analysis components: 1. A 1-sentence summary. 2. Identify the SDA Fundamental Belief. 3. E.G. White insight. 4. Pastoral commentary focusing on Three Angels' Messages.`;
 
-                setTimeout(() => {
-                    setAnalysis(match || FALLBACK_INSIGHT);
+                try {
+                    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [{ parts: [{ text: prompt }] }]
+                        })
+                    });
+                    const data = await response.json();
+                    const aiText = data.candidates[0].content.parts[0].text;
+                    
+                    setAnalysis({
+                        title: "Cloud Research Result",
+                        summary: aiText.split('\n')[0] || "Prophetic overview generated.",
+                        pillar: "SDA Systematic Theology",
+                        egw: aiText.split('\n').find(l => l.toLowerCase().includes('white')) || "Insight from the Spirit of Prophecy.",
+                        pastoral: aiText.substring(aiText.length / 2)
+                    });
+                } catch (e) {
+                    setAnalysis(DEFAULT_INSIGHT);
+                } finally {
                     setIsLoading(false);
-                    setStatus("Research Complete");
-                }, 1000);
+                }
             };
 
             return (
                 <div className="h-screen bg-slate-50 flex flex-col max-w-md mx-auto shadow-2xl relative overflow-hidden">
-                    <header className="bg-[#2b4c7e] text-white p-5 pt-12 md:pt-6 shadow-lg flex items-center justify-between z-50">
+                    <header className="bg-sda-blue text-white p-5 pt-12 md:pt-6 shadow-lg flex items-center justify-between z-50">
                         <div className="flex items-center gap-3">
-                            <div className="bg-amber-400 p-2 rounded-xl shadow-md">
-                                <i data-lucide="book-open" className="text-[#2b4c7e] w-5 h-5"></i>
+                            <div className="bg-amber-400 p-2 rounded-xl">
+                                <i data-lucide="scroll" className="text-[#2b4c7e] w-5 h-5"></i>
                             </div>
                             <div>
-                                <h1 className="font-extrabold text-lg tracking-tight leading-none">Scripture Lens</h1>
-                                <p className="text-[9px] text-blue-200 font-bold uppercase tracking-[0.2em] mt-1 italic">SDA Research Engine</p>
+                                <h1 className="font-extrabold text-lg tracking-tight">Scripture Lens</h1>
+                                <p className="text-[9px] text-blue-200 font-bold uppercase tracking-[0.2em] italic">Prophetic Research</p>
                             </div>
                         </div>
-                        <div className="bg-white/10 px-3 py-1 rounded-full flex items-center gap-2">
-                             <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                             <span className="text-[9px] font-bold uppercase tracking-widest">Offline</span>
+                        <div className={`px-3 py-1 rounded-full flex items-center gap-2 border ${apiKey ? 'border-green-400 bg-green-400/10' : 'border-red-400 bg-red-400/10'}`}>
+                             <div className={`w-2 h-2 rounded-full ${apiKey ? 'bg-green-400' : 'bg-red-500 animate-pulse'}`}></div>
+                             <span className="text-[9px] font-bold uppercase tracking-widest">{apiKey ? 'Online' : 'Offline'}</span>
                         </div>
                     </header>
 
@@ -185,97 +240,86 @@
                             <div className="flex-1 flex flex-col">
                                 <div className="flex-1 bg-black relative flex items-center justify-center overflow-hidden">
                                     {cameraError ? (
-                                        <div className="text-center p-8 space-y-6 z-20">
-                                            <i data-lucide="camera-off" className="text-slate-600 w-16 h-16 mx-auto"></i>
-                                            <p className="text-white/60 text-sm">Camera hardware not found. Please upload a photo instead.</p>
-                                            <button onClick={() => fileInputRef.current.click()} className="px-8 py-4 bg-amber-400 rounded-2xl font-black text-[#2b4c7e] shadow-2xl active:scale-95 transition-transform">
-                                                UPLOAD PHOTO
+                                        <div className="text-center p-10 text-slate-500 animate-in fade-in duration-500">
+                                            <i data-lucide="camera-off" className="w-16 h-16 mx-auto mb-4 opacity-20"></i>
+                                            <p className="text-sm font-bold uppercase tracking-widest text-white">Camera Unavailable</p>
+                                            <p className="text-xs italic mt-2 text-slate-400">Hardware not detected. No problem! Use the upload button below to select a photo of your verse.</p>
+                                            <button 
+                                                onClick={() => fileInputRef.current.click()}
+                                                className="mt-6 px-6 py-3 bg-amber-400 text-sda-blue rounded-xl font-bold flex items-center gap-2 mx-auto active:scale-95 transition-all"
+                                            >
+                                                <i data-lucide="image" className="w-4 h-4"></i> Upload Verse Photo
                                             </button>
                                         </div>
                                     ) : (
                                         <>
-                                            <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover opacity-80" />
+                                            <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover opacity-70" />
                                             <div className="absolute inset-0 pointer-events-none flex items-center justify-center p-12">
-                                                <div className="w-full aspect-[4/3] border-2 border-amber-400/40 rounded-3xl relative shadow-[0_0_0_999px_rgba(0,0,0,0.5)]">
+                                                <div className="w-full aspect-[3/4] border-2 border-amber-400/30 rounded-3xl relative shadow-[0_0_0_999px_rgba(0,0,0,0.6)]">
                                                     <div className="scanning-line"></div>
-                                                    <div className="absolute -top-1 -left-1 w-6 h-6 border-t-4 border-l-4 border-amber-400 rounded-tl-lg"></div>
-                                                    <div className="absolute -top-1 -right-1 w-6 h-6 border-t-4 border-r-4 border-amber-400 rounded-tr-lg"></div>
-                                                    <div className="absolute -bottom-1 -left-1 w-6 h-6 border-b-4 border-l-4 border-amber-400 rounded-bl-lg"></div>
-                                                    <div className="absolute -bottom-1 -right-1 w-6 h-6 border-b-4 border-r-4 border-amber-400 rounded-br-lg"></div>
                                                 </div>
                                             </div>
                                         </>
                                     )}
                                 </div>
-                                <div className="p-8 bg-white border-t-[6px] border-[#2b4c7e] rounded-t-[40px] -mt-10 z-30 flex flex-col items-center gap-6 shadow-2xl">
+                                <div className="p-8 bg-white border-t-[6px] border-sda-blue rounded-t-[40px] -mt-10 z-30 flex flex-col items-center gap-6 shadow-2xl">
                                     <div className="flex items-center gap-10">
-                                        <button onClick={() => fileInputRef.current.click()} className="p-4 text-slate-300 hover:text-[#2b4c7e] transition-colors">
-                                            <i data-lucide="image" className="w-7 h-7"></i>
-                                        </button>
-                                        <button onClick={handleCapture} className="w-20 h-20 rounded-full bg-[#2b4c7e] border-[8px] border-slate-50 shadow-2xl flex items-center justify-center active:scale-90 transition-all">
+                                        <button onClick={() => setShowSettings(true)} className="p-4 text-slate-300 hover:text-sda-blue transition-colors"><i data-lucide="settings" className="w-7 h-7"></i></button>
+                                        <button 
+                                            onClick={handleCapture} 
+                                            disabled={cameraError}
+                                            className={`w-20 h-20 rounded-full bg-sda-blue border-[8px] border-slate-50 shadow-2xl flex items-center justify-center active:scale-90 transition-all ${cameraError ? 'opacity-20 grayscale' : ''}`}
+                                        >
                                             <i data-lucide="camera" className="text-white w-8 h-8"></i>
                                         </button>
-                                        <button onClick={() => alert("Scan a verse to see its SDA theological alignment.")} className="p-4 text-slate-300">
-                                            <i data-lucide="help-circle" className="w-7 h-7"></i>
-                                        </button>
+                                        <button onClick={() => fileInputRef.current.click()} className="p-4 text-slate-300 hover:text-sda-blue transition-colors"><i data-lucide="image" className="w-7 h-7"></i></button>
                                     </div>
-                                    <div className="text-center">
-                                        <span className="px-4 py-1 bg-slate-100 rounded-full text-[9px] text-[#2b4c7e] font-black uppercase tracking-[0.2em]">{status}</span>
-                                    </div>
+                                    <span className="px-4 py-1 bg-slate-100 rounded-full text-[9px] text-sda-blue font-black uppercase tracking-[0.2em]">{status}</span>
                                 </div>
                             </div>
                         )}
 
-                        {}
                         {view === 'results' && (
-                            <div className="flex-1 flex flex-col p-6 space-y-6 overflow-y-auto custom-scrollbar pb-10">
-                                <div className="relative rounded-3xl shadow-xl border overflow-hidden shrink-0 h-44">
+                            <div className="flex-1 flex flex-col p-5 space-y-5 overflow-y-auto custom-scrollbar pb-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                <div className="relative rounded-2xl shadow-xl border overflow-hidden shrink-0 h-40">
                                     <img src={photo} className="w-full h-full object-cover" />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-[#2b4c7e] via-[#2b4c7e]/10 to-transparent flex flex-col justify-end p-4">
-                                        <p className="text-white text-xs font-bold uppercase tracking-widest mb-1 opacity-70">Captured Text</p>
-                                        <p className="text-white text-sm serif-italic leading-tight line-clamp-2">"{extractedText}"</p>
+                                    <div className="absolute inset-0 bg-gradient-to-t from-sda-blue via-transparent flex flex-col justify-end p-4">
+                                        <p className="text-white text-[10px] font-bold uppercase mb-1 opacity-70 tracking-widest">Captured Text</p>
+                                        <p className="text-white text-sm serif-italic italic line-clamp-2">"{extractedText}"</p>
                                     </div>
                                 </div>
                                 
                                 {isLoading ? (
-                                    <div className="py-20 text-center space-y-4 animate-pulse">
-                                        <div className="w-12 h-12 border-4 border-[#2b4c7e] border-t-transparent rounded-full animate-spin mx-auto"></div>
+                                    <div className="py-20 text-center space-y-4">
+                                        <div className="w-12 h-12 border-4 border-sda-blue border-t-amber-400 rounded-full animate-spin mx-auto"></div>
                                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{status}</p>
                                     </div>
                                 ) : (
-                                    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
-                                        {/* Summary Section */}
-                                        <div className="space-y-2">
-                                            <h3 className="text-amber-600 font-black text-[10px] uppercase tracking-[0.2em] flex items-center gap-2">
-                                                <i data-lucide="info" className="w-3 h-3"></i> Verse Summary
-                                            </h3>
-                                            <p className="text-slate-600 text-sm leading-relaxed font-medium">
-                                                {analysis.summary}
-                                            </p>
+                                    <div className="space-y-5">
+                                        <div className="bg-slate-50 p-4 rounded-xl border-l-4 border-amber-400 shadow-sm">
+                                            <h3 className="text-amber-700 font-black text-[9px] uppercase tracking-widest mb-1">Verse Summary</h3>
+                                            <p className="text-slate-600 text-sm italic">"{analysis.summary}"</p>
                                         </div>
 
-                                        {/* Insight Section */}
                                         <div className="space-y-4">
-                                            <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                                                <h3 className="text-[#2b4c7e] font-black text-[10px] uppercase tracking-[0.2em] flex items-center gap-2">
-                                                    <i data-lucide="sparkles" className="text-amber-500 w-4 h-4"></i> {analysis.title}
-                                                </h3>
-                                            </div>
+                                            <h3 className="text-sda-blue font-black text-[10px] uppercase tracking-widest flex items-center gap-2">
+                                                <i data-lucide="shield-check" className="w-4 h-4 text-amber-500"></i> {analysis.pillar}
+                                            </h3>
+                                            <h2 className="text-slate-800 font-extrabold text-xl leading-tight">{analysis.title}</h2>
                                             
-                                            <p className="text-slate-700 text-[15px] leading-relaxed serif-italic bg-slate-50 p-5 rounded-2xl border-l-4 border-[#2b4c7e] shadow-sm">
-                                                {analysis.content}
-                                            </p>
+                                            <div className="p-5 bg-blue-50/50 rounded-2xl border border-blue-100 shadow-sm">
+                                                <span className="text-[9px] font-bold text-sda-blue uppercase mb-2 block tracking-widest">Prophetic Insight</span>
+                                                <p className="text-slate-700 text-[14px] leading-relaxed serif-italic italic">{analysis.egw}</p>
+                                            </div>
 
-                                            <div className="p-4 bg-amber-50 rounded-2xl border border-amber-200">
-                                                <p className="text-[10px] text-amber-800 font-bold mb-1 uppercase tracking-widest">Present Truth Perspective</p>
-                                                <p className="text-[11px] text-slate-500 italic leading-relaxed">
-                                                    This insight focuses on the Three Angels' Messages and the 'Blessed Hope' context of SDA hermeneutics.
-                                                </p>
+                                            <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-sm">
+                                                <span className="text-[9px] font-bold text-amber-600 uppercase mb-2 block tracking-widest">Pastoral Perspective</span>
+                                                <p className="text-slate-600 text-[13px] leading-relaxed">{analysis.pastoral}</p>
                                             </div>
                                         </div>
                                         
-                                        <button onClick={() => setView('camera')} className="w-full py-4 bg-[#2b4c7e] text-white rounded-2xl font-bold shadow-lg flex items-center justify-center gap-2 active:scale-95 transition-all">
-                                            <i data-lucide="refresh-cw" className="w-5 h-5"></i> Scan Another
+                                        <button onClick={() => setView('camera')} className="w-full py-4 bg-sda-blue text-white rounded-2xl font-bold shadow-lg flex items-center justify-center gap-2 active:scale-95 transition-all">
+                                            <i data-lucide="refresh-cw" className="w-5 h-5"></i> New Research Scan
                                         </button>
                                     </div>
                                 )}
@@ -283,7 +327,35 @@
                         )}
                     </main>
 
-                    {/* Hidden Elements */}
+                    {}
+                    {showSettings && (
+                        <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-sm z-[100] flex items-end animate-in fade-in duration-300">
+                            <div className="w-full bg-white rounded-t-[40px] p-8 space-y-6 shadow-2xl">
+                                <div className="flex items-center justify-between">
+                                    <h2 className="text-xl font-extrabold text-sda-blue">Configuration</h2>
+                                    <button onClick={() => setShowSettings(false)} className="p-2 bg-slate-100 rounded-full"><i data-lucide="x" className="w-5 h-5 text-slate-400"></i></button>
+                                </div>
+                                <div className="space-y-4">
+                                    <label className="block">
+                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 block">Gemini API Key</span>
+                                        <input 
+                                            type="password" 
+                                            className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-sda-blue transition-all"
+                                            placeholder="Paste Key here..."
+                                            value={apiKey}
+                                            onChange={(e) => {
+                                                setApiKey(e.target.value);
+                                                localStorage.setItem('sda_api_key', e.target.value);
+                                            }}
+                                        />
+                                    </label>
+                                    <p className="text-[10px] text-slate-400 italic">If empty, the app uses the built-in prophetic library for offline study.</p>
+                                </div>
+                                <button onClick={() => setShowSettings(false)} className="w-full py-4 bg-sda-blue text-white rounded-2xl font-bold shadow-lg active:scale-95 transition-all">Save & Return</button>
+                            </div>
+                        </div>
+                    )}
+
                     <canvas ref={canvasRef} className="hidden" />
                     <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={(e) => {
                         if (e.target.files && e.target.files[0]) {
